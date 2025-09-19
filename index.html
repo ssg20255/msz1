@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Signal Buddy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --surface: #1e1e1e;
+            --signal-buy: #14B8A6;
+            --signal-sell: #EF4444;
+            --signal-hold: #F59E0B;
+            --text-primary: #f5f5f5;
+            --text-secondary: #a1a1aa;
+        }
+
+        body.light-mode {
+            --bg-primary: #f5f5f5;
+            --surface: #ffffff;
+            --signal-buy: #059669;
+            --signal-sell: #DC2626;
+            --signal-hold: #D97706;
+            --text-primary: #121212;
+            --text-secondary: #525252;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .surface-card {
+            background-color: var(--surface);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .signal-buy-bg { background-color: rgba(20, 184, 166, 0.2); }
+        .signal-sell-bg { background-color: rgba(239, 68, 68, 0.2); }
+        .signal-hold-bg { background-color: rgba(245, 158, 11, 0.2); }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .prices-header-item {
+            flex: 0 0 auto;
+            width: 120px;
+            scroll-snap-align: start;
+        }
+
+        .signal-progress {
+            height: 4px;
+            border-radius: 9999px;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body class="p-4">
+
+    <!-- Header for Live Prices and System Status -->
+    <header class="sticky top-0 z-20 w-full surface-card rounded-xl p-3 mb-4">
+        <div class="flex justify-between items-center mb-2">
+            <h1 class="text-xl font-bold">Live Prices</h1>
+            <button id="theme-toggle" class="p-2 rounded-full hover:bg-zinc-800 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path id="moon-icon" d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 7.5a.75.75 0 01.75.75h2.25a.75.75 0 010 1.5H8.25a.75.75 0 01-.75-.75V7.5zM2.25 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H3a.75.75 0 01-.75-.75zM7.5 15.75a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H8.25a.75.75 0 01-.75-.75V15.75zM12 19.5a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5h-2.25a.75.75 0 01-.75-.75zM19.5 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5h-2.25a.75.75 0 01-.75-.75zM15.75 7.5a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5h-2.25a.75.75 0 01-.75-.75V7.5zM15.75 15.75a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5h-2.25a.75.75 0 01-.75-.75V15.75zM16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Scrollable Prices -->
+        <div id="prices-header" class="flex overflow-x-auto gap-4 py-2" style="scrollbar-width: none;">
+            <!-- Live prices will be injected here -->
+        </div>
+
+        <!-- Connection Status & User ID -->
+        <div class="mt-2 flex justify-between items-center text-xs text-text-secondary">
+            <div class="flex items-center gap-2">
+                <span id="connection-status" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                <span id="connection-text">Disconnected</span>
+            </div>
+            <div id="user-id" class="font-mono truncate"></div>
+        </div>
+    </header>
+
+    <!-- Main Content for Signals -->
+    <main class="space-y-6 pb-20">
+
+        <!-- Signal Buddy Section -->
+        <div>
+            <h2 class="text-xl font-bold mb-3">Signal Buddy</h2>
+            <div id="signals-container" class="space-y-4">
+                <!-- Signals will be injected here -->
+            </div>
+        </div>
+
+        <!-- Signal Statistics Subheader -->
+        <div class="surface-card rounded-xl p-4">
+            <h3 class="text-lg font-bold mb-2">Signal Statistics</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                <div>
+                    <span class="block text-2xl font-bold" id="signals-total">0</span>
+                    <span class="block text-sm text-text-secondary">Total</span>
+                </div>
+                <div>
+                    <span class="block text-2xl font-bold text-signal-buy" id="signals-won">0</span>
+                    <span class="block text-sm text-text-secondary">Won</span>
+                </div>
+                <div>
+                    <span class="block text-2xl font-bold text-signal-sell" id="signals-lost">0</span>
+                    <span class="block text-sm text-text-secondary">Lost</span>
+                </div>
+                <div>
+                    <span class="block text-2xl font-bold" id="win-rate">0%</span>
+                    <span class="block text-sm text-text-secondary">Win Rate</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Archived Signals -->
+        <div>
+            <h3 class="text-xl font-bold my-3">Archived Signals</h3>
+            <div class="flex space-x-2 mb-4">
+                <button id="today-signals" class="px-4 py-2 rounded-full text-sm font-semibold bg-zinc-700 hover:bg-zinc-600 transition">Today's Signals</button>
+                <button id="all-signals" class="px-4 py-2 rounded-full text-sm font-semibold bg-zinc-800 hover:bg-zinc-600 transition">All Time</button>
+            </div>
+            <div id="archived-signals-container" class="space-y-2">
+                <!-- Archived signals will be injected here -->
+            </div>
+        </div>
+    </main>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+
+    setLogLevel('debug');
+
+    // Canvas-provided global variables
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    let userId = null;
+
+    // UI elements
+    const pricesHeader = document.getElementById('prices-header');
+    const signalsContainer = document.getElementById('signals-container');
+    const archivedSignalsContainer = document.getElementById('archived-signals-container');
+    const themeToggle = document.getElementById('theme-toggle');
+    const connectionStatusEl = document.getElementById('connection-status');
+    const connectionTextEl = document.getElementById('connection-text');
+    const signalsTotalEl = document.getElementById('signals-total');
+    const signalsWonEl = document.getElementById('signals-won');
+    const signalsLostEl = document.getElementById('signals-lost');
+    const winRateEl = document.getElementById('win-rate');
+    const todaySignalsBtn = document.getElementById('today-signals');
+    const allSignalsBtn = document.getElementById('all-signals');
+    const userIdEl = document.getElementById('user-id');
+
+    // Trading strategy parameters (pre-configured)
+    const macdFastPeriod = 12;
+    const macdSlowPeriod = 26;
+    const macdSignalPeriod = 9;
+    const bollingerPeriod = 20;
+    const bollingerStdDev = 2;
+    const profitThreshold = 0.001; // 0.1%
+    
+    // Fixed parameters
+    const minDuration = 60000; // 1 minute in milliseconds
+    const maxDuration = 300000; // 5 minutes in milliseconds
+
+    let ws;
+    let activeSignals = [];
+    let archivedSignals = [];
+    let currentFilter = 'today';
+    let isAuthReady = false;
+
+    // Symbols to trade - using real-time Binance data
+    const assets = ['btcusdt', 'ethusdt', 'solusdt', 'bnbusdt'];
+    const priceData = {};
+    const priceHistory = {};
+    
+    // Firestore collection path
+    const signalsCollectionPath = `artifacts/${appId}/public/data/signals`;
+
+    // Render price item in the header
+    function renderPriceItem(symbol) {
+        return `
+            <div id="price-header-${symbol}" class="prices-header-item p-2 rounded-lg text-center surface-card">
+                <div class="font-semibold text-sm mb-1">${symbol.toUpperCase().replace('USD', '/USD')}</div>
+                <div id="price-value-header-${symbol}" class="text-lg font-mono">$0.00</div>
+                <div id="price-change-header-${symbol}" class="text-xs font-mono">0.00%</div>
+            </div>
+        `;
+    }
+    
+    // Render a trading signal card
+    function renderSignalCard(signal) {
+        const signalClass = signal.type === 'BUY' ? 'border-teal-500' : 'border-red-500';
+        const price = parseFloat(signal.entryPrice).toLocaleString('en-US', { maximumFractionDigits: 4 });
+
+        return `
+            <div id="signal-card-${signal.id}" class="surface-card p-4 rounded-xl border-l-4 ${signalClass}">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-semibold">${signal.symbol.toUpperCase().replace('USD', '/USD')}</span>
+                    <span class="px-2 py-1 rounded-full text-xs font-bold ${signal.type === 'BUY' ? 'bg-signal-buy-bg text-signal-buy' : 'bg-signal-sell-bg text-signal-sell'}">${signal.type}</span>
+                </div>
+                <div class="text-sm text-text-secondary mb-2">
+                    <p>Entry Price: <span class="font-mono text-text-primary">${price}</span></p>
+                </div>
+                <div class="relative pt-1">
+                    <div class="flex mb-2 items-center justify-between">
+                        <div>
+                            <span class="text-xs font-semibold inline-block py-1 px-2 rounded-full text-text-secondary bg-zinc-800">
+                                Time Remaining
+                            </span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-semibold inline-block text-text-secondary" id="countdown-${signal.id}">
+                                02:30
+                            </span>
+                        </div>
+                    </div>
+                    <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-zinc-700">
+                        <div id="progress-${signal.id}" style="width:0%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center signal-progress"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Render an archived signal card
+    function renderArchivedSignalCard(signal) {
+        const resultColorClass = signal.result === 'WON' ? 'bg-signal-buy text-signal-buy' : (signal.result === 'LOST' ? 'bg-signal-sell text-signal-sell' : 'bg-signal-hold text-signal-hold');
+        const resultBorderClass = signal.result === 'WON' ? 'border-teal-500' : (signal.result === 'LOST' ? 'border-red-500' : 'border-amber-500');
+        const entryPrice = parseFloat(signal.entryPrice).toLocaleString('en-US', { maximumFractionDigits: 4 });
+        const exitPrice = parseFloat(signal.exitPrice).toLocaleString('en-US', { maximumFractionDigits: 4 });
+        const pnl = ((signal.exitPrice - signal.entryPrice) / signal.entryPrice * 100).toFixed(2);
+        const pnlColor = pnl > 0 ? 'text-signal-buy' : (pnl < 0 ? 'text-signal-sell' : 'text-text-secondary');
+        const signalDate = signal.entryTime ? new Date(signal.entryTime).toLocaleDateString() : '';
+
+        return `
+            <div class="surface-card p-4 rounded-xl border-l-4 ${resultBorderClass}">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-semibold">${signal.symbol.toUpperCase().replace('USD', '/USD')}</span>
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full ${resultColorClass.split(' ')[0]}"></span>
+                        <span class="px-2 py-1 rounded-full text-xs font-bold ${signal.result === 'WON' ? 'bg-signal-buy-bg text-signal-buy' : (signal.result === 'LOST' ? 'bg-signal-sell-bg text-signal-sell' : 'bg-signal-hold-bg text-signal-hold')}">${signal.result}</span>
+                    </div>
+                </div>
+                <div class="text-sm text-text-secondary">
+                    <p>Signal: <span class="text-text-primary">${signal.type}</span></p>
+                    <p>Entry Price: <span class="font-mono text-text-primary">${entryPrice}</span></p>
+                    <p>Closing Price: <span class="font-mono text-text-primary">${exitPrice}</span></p>
+                    <p>P&L: <span class="font-mono ${pnlColor}">${pnl}%</span></p>
+                    <p class="text-xs mt-2">Closed at: ${signal.closeTime ? new Date(signal.closeTime).toLocaleTimeString() : ''} on ${signalDate}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    // Function to render archived signals based on the current filter
+    function renderArchivedSignals() {
+        const today = new Date().toDateString();
+        let filteredSignals = archivedSignals;
+
+        if (currentFilter === 'today') {
+            filteredSignals = archivedSignals.filter(signal => new Date(signal.entryTime).toDateString() === today);
+        }
+
+        archivedSignalsContainer.innerHTML = filteredSignals.map(s => renderArchivedSignalCard(s)).join('');
+    }
+
+    // --- Technical Indicator Calculations (New, more professional strategy) ---
+
+    // Calculate a Simple Moving Average (SMA)
+    function calculateSMA(prices, period) {
+        if (!prices || prices.length < period) return 0;
+        const periodPrices = prices.slice(-period);
+        const sum = periodPrices.reduce((acc, curr) => acc + curr, 0);
+        return sum / periodPrices.length;
+    }
+
+    // Calculate Exponential Moving Average (EMA)
+    function calculateEMA(prices, period) {
+        if (!prices || prices.length < period) return 0;
+        const k = 2 / (period + 1);
+        let ema = prices[0];
+        for (let i = 1; i < prices.length; i++) {
+            ema = (prices[i] * k) + (ema * (1 - k));
+        }
+        return ema;
+    }
+
+    // Calculate standard deviation for Bollinger Bands
+    function calculateStdDev(prices, period) {
+        if (!prices || prices.length < period) return 0;
+        const periodPrices = prices.slice(-period);
+        const mean = calculateSMA(periodPrices, period);
+        const variance = periodPrices.reduce((sum, price) => sum + Math.pow(price - mean, 2), 0) / period;
+        return Math.sqrt(variance);
+    }
+    
+    // Update a specific price header item
+    function updatePrice(symbol, newPrice) {
+        const priceValueEl = document.getElementById(`price-value-header-${symbol}`);
+        const priceChangeEl = document.getElementById(`price-change-header-${symbol}`);
+        
+        if (!priceValueEl || !priceChangeEl) return;
+        
+        const oldPrice = priceData[symbol];
+        if (oldPrice !== undefined) {
+            const priceChange = ((newPrice - oldPrice) / oldPrice) * 100;
+            priceChangeEl.textContent = `${priceChange.toFixed(2)}%`;
+            priceChangeEl.style.color = priceChange > 0 ? 'var(--signal-buy)' : (priceChange < 0 ? 'var(--signal-sell)' : 'var(--text-primary)');
+        }
+        priceValueEl.textContent = `$${parseFloat(newPrice).toLocaleString('en-US', { maximumFractionDigits: 4 })}`;
+
+        if (!priceHistory[symbol]) {
+            priceHistory[symbol] = [];
+        }
+        priceHistory[symbol].push(newPrice);
+        
+        // Ensure price history doesn't grow indefinitely, keep enough for indicators
+        const maxHistory = Math.max(macdSlowPeriod, bollingerPeriod) + 1;
+        if (priceHistory[symbol].length > maxHistory) {
+            priceHistory[symbol].shift();
+        }
+        priceData[symbol] = newPrice;
+    }
+    
+    // Generate and display a new signal based on the new, professional strategy
+    function generateSignal() {
+        assets.forEach(symbol => {
+            const currentPrice = priceData[symbol];
+            if (!currentPrice) return;
+            
+            const prices = priceHistory[symbol];
+            // Check if we have enough historical data for the indicators
+            if (!prices || prices.length < Math.max(macdSlowPeriod, bollingerPeriod) + 1) return;
+            
+            // Calculate MACD
+            const emaFast = calculateEMA(prices, macdFastPeriod);
+            const emaSlow = calculateEMA(prices, macdSlowPeriod);
+            const macdLine = emaFast - emaSlow;
+            const macdHistory = prices.map(price => {
+                const innerEmaFast = calculateEMA(prices.slice(0, prices.indexOf(price) + 1), macdFastPeriod);
+                const innerEmaSlow = calculateEMA(prices.slice(0, prices.indexOf(price) + 1), macdSlowPeriod);
+                return innerEmaFast - innerEmaSlow;
+            }).filter(val => val !== 0);
+
+            const signalLine = calculateEMA(macdHistory, macdSignalPeriod);
+            
+            // Calculate Bollinger Bands
+            const bollingerSMA = calculateSMA(prices, bollingerPeriod);
+            const bollingerStdDevVal = calculateStdDev(prices, bollingerPeriod);
+            const upperBand = bollingerSMA + (bollingerStdDev * bollingerStdDevVal);
+            const lowerBand = bollingerSMA - (bollingerStdDev * bollingerStdDevVal);
+
+            let signalType = null;
+            
+            // Professional Strategy Logic: MACD Crossover + Bollinger Band Confirmation
+            const prevMacdLine = macdHistory.slice(-2)[0];
+            const prevSignalLine = calculateEMA(macdHistory.slice(0, -1), macdSignalPeriod);
+            
+            const isBuyCrossover = macdLine > signalLine && prevMacdLine <= prevSignalLine;
+            const isSellCrossover = macdLine < signalLine && prevMacdLine >= prevSignalLine;
+
+            if (isBuyCrossover && currentPrice < lowerBand) {
+                signalType = 'BUY';
+            } else if (isSellCrossover && currentPrice > upperBand) {
+                signalType = 'SELL';
+            }
+
+            if (signalType) {
+                const newSignal = {
+                    id: Date.now().toString(),
+                    symbol: symbol,
+                    type: signalType,
+                    entryPrice: currentPrice,
+                    entryTime: new Date().getTime(),
+                    duration: Math.floor(Math.random() * (maxDuration - minDuration + 1)) + minDuration,
+                };
+                activeSignals.unshift(newSignal);
+                signalsContainer.innerHTML = activeSignals.map(s => renderSignalCard(s)).join('');
+            }
+        });
+    }
+
+    // Check active signals for expiration and update UI
+    function checkSignals() {
+        const now = new Date().getTime();
+        const completedSignals = [];
+
+        // Update all active signals
+        activeSignals.forEach(signal => {
+            const timeElapsed = now - signal.entryTime;
+            const progress = Math.min(100, (timeElapsed / signal.duration) * 100);
+            const remainingTime = Math.max(0, signal.duration - timeElapsed);
+
+            const countdownEl = document.getElementById(`countdown-${signal.id}`);
+            const progressEl = document.getElementById(`progress-${signal.id}`);
+
+            if (countdownEl && progressEl) {
+                const minutes = Math.floor(remainingTime / 60000);
+                const seconds = Math.floor((remainingTime % 60000) / 1000);
+                countdownEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                const currentPrice = priceData[signal.symbol];
+                if (currentPrice) {
+                    let isWinning;
+                    if (signal.type === 'BUY') {
+                        isWinning = currentPrice > signal.entryPrice;
+                    } else { // SELL signal
+                        isWinning = currentPrice < signal.entryPrice;
+                    }
+                    progressEl.style.backgroundColor = isWinning ? 'var(--signal-buy)' : 'var(--signal-sell)';
+                }
+                progressEl.style.width = `${progress}%`;
+            }
+        });
+
+        // Archive expired signals
+        for (let i = activeSignals.length - 1; i >= 0; i--) {
+            const signal = activeSignals[i];
+            const timeElapsed = now - signal.entryTime;
+
+            if (timeElapsed >= signal.duration) {
+                const currentPrice = priceData[signal.symbol];
+                if (currentPrice) {
+                    const pnl = (currentPrice - signal.entryPrice) / signal.entryPrice;
+                    let result;
+                    if (signal.type === 'BUY' && pnl > profitThreshold) {
+                        result = 'WON';
+                    } else if (signal.type === 'SELL' && pnl < -profitThreshold) {
+                        result = 'WON';
+                    } else {
+                        result = 'LOST';
+                    }
+                    signal.result = result;
+                    signal.exitPrice = currentPrice;
+                    signal.closeTime = now;
+                    completedSignals.push(signal);
+                    activeSignals.splice(i, 1);
+                    
+                    saveSignalToFirestore(signal);
+                }
+            }
+        }
+    }
+
+    // Save a completed signal to Firestore
+    async function saveSignalToFirestore(signal) {
+        if (!isAuthReady) return;
+        try {
+            const signalsRef = collection(db, signalsCollectionPath);
+            await addDoc(signalsRef, { ...signal, createdAt: serverTimestamp() });
+        } catch (error) {
+            console.error("Error saving signal to Firestore: ", error);
+        }
+    }
+
+    // Delete signals older than one week
+    async function deleteOldSignals() {
+        if (!isAuthReady) return;
+        const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        const signalsRef = collection(db, signalsCollectionPath);
+        const q = query(signalsRef, where('entryTime', '<', oneWeekAgo));
+
+        try {
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach(async (doc) => {
+                await deleteDoc(doc.ref);
+            });
+            console.log('Old signals deleted from Firestore.');
+        } catch (error) {
+            console.error('Error deleting old signals:', error);
+        }
+    }
+
+    // Update the statistics display
+    function updateSignalStatistics() {
+        const total = archivedSignals.length;
+        const won = archivedSignals.filter(s => s.result === 'WON').length;
+        const lost = total - won;
+        const winRate = total > 0 ? (won / total * 100).toFixed(1) : 0;
+        
+        signalsTotalEl.textContent = total;
+        signalsWonEl.textContent = won;
+        signalsLostEl.textContent = lost;
+        winRateEl.textContent = `${winRate}%`;
+    }
+
+    // Connect to the WebSocket for crypto data
+    function connectWebSocket() {
+        connectionStatusEl.classList.remove('bg-teal-500', 'bg-red-500');
+        connectionStatusEl.classList.add('bg-amber-500');
+        connectionTextEl.textContent = 'Connecting...';
+
+        const streams = assets.map(asset => `${asset}@trade`).join('/');
+        ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
+
+        ws.onopen = () => {
+            console.log('WebSocket connection opened.');
+            connectionStatusEl.classList.remove('bg-amber-500', 'bg-red-500');
+            connectionStatusEl.classList.add('bg-teal-500', 'animate-pulse');
+            connectionTextEl.textContent = 'Connected';
+        };
+
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            if (message.stream && message.data) {
+                const symbol = message.data.s.toLowerCase();
+                const price = parseFloat(message.data.p);
+                updatePrice(symbol, price);
+            }
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket connection closed. Attempting to reconnect...');
+            connectionStatusEl.classList.remove('bg-teal-500', 'animate-pulse');
+            connectionStatusEl.classList.add('bg-red-500');
+            connectionTextEl.textContent = 'Disconnected';
+            setTimeout(connectWebSocket, 5000);
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket Error: ', error);
+            ws.close();
+        };
+    }
+
+    // Initial setup
+    window.onload = () => {
+        pricesHeader.innerHTML = assets.map(renderPriceItem).join('');
+        connectWebSocket();
+        
+        setInterval(generateSignal, 60000); // Check for signals every minute
+        setInterval(checkSignals, 1000); // Check for expired signals every second
+        setInterval(deleteOldSignals, 7 * 24 * 60 * 60 * 1000); // Check and delete old signals every week
+    };
+
+    // Theme toggle functionality
+    themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('light-mode');
+    });
+
+    // Event listeners for signal filtering
+    todaySignalsBtn.addEventListener('click', () => {
+        currentFilter = 'today';
+        todaySignalsBtn.classList.remove('bg-zinc-800');
+        todaySignalsBtn.classList.add('bg-zinc-700');
+        allSignalsBtn.classList.remove('bg-zinc-700');
+        allSignalsBtn.classList.add('bg-zinc-800');
+        renderArchivedSignals();
+    });
+
+    allSignalsBtn.addEventListener('click', () => {
+        currentFilter = 'all';
+        allSignalsBtn.classList.remove('bg-zinc-800');
+        allSignalsBtn.classList.add('bg-zinc-700');
+        todaySignalsBtn.classList.remove('bg-zinc-700');
+        todaySignalsBtn.classList.add('bg-zinc-800');
+        renderArchivedSignals();
+    });
+
+    // Set initial active button
+    todaySignalsBtn.classList.remove('bg-zinc-800');
+    todaySignalsBtn.classList.add('bg-zinc-700');
+
+    // Firebase Authentication and Firestore listener
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            userId = user.uid;
+        } else {
+            if (initialAuthToken) {
+                await signInWithCustomToken(auth, initialAuthToken).catch(error => {
+                    console.error("Custom token sign-in failed:", error);
+                    signInAnonymously(auth);
+                });
+            } else {
+                await signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed:", error));
+            }
+        }
+        userId = auth.currentUser?.uid || 'anonymous';
+        userIdEl.textContent = `User ID: ${userId}`;
+        isAuthReady = true;
+
+        if (isAuthReady) {
+            // Setup real-time listener for archived signals
+            const signalsRef = collection(db, signalsCollectionPath);
+            onSnapshot(signalsRef, (snapshot) => {
+                archivedSignals = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    archivedSignals.push({ ...data, id: doc.id });
+                });
+                archivedSignals.sort((a, b) => b.entryTime - a.entryTime);
+                renderArchivedSignals();
+                updateSignalStatistics();
+            }, (error) => {
+                console.error("Error fetching signals from Firestore:", error);
+            });
+            deleteOldSignals();
+        }
+    });
+
+    </script>
+</body>
+</html>
